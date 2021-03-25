@@ -43,7 +43,7 @@ services:
       context: ./netflix_app
       dockerfile: Dockerfile
     volumes: 
-      - /Users/Philipp/Documents/0_Allgemeines/6_Python/netflix/netflix_app/data:/app/data
+      - /absolute/path/to/the/repo/netflix_app/data:/app/data
     networks:
       - postgres
     restart: on-failure
