@@ -43,17 +43,59 @@ $ docker-compose up
 ```
 (so omit the -d for detached mode) and find the error message.
 
-Nect, open your Browser and type in **localhost:5050**. It needs a few seconds to set up (so keep refreshing if it doesn't work the first time) and then you should see the starting page for pgAdmin4. Type in a password of your choice (remember it or else you need to start the container again!) then click on **add new server**. You can name the serve anything you like, the more important part is the tab *connection*. You have to specify your host, which can be a service name as well. Thus you can type in the name of the postgres container which has creatively been named *postgres_container* (See the top of the *docker-compose*). 
+To make sure the containers are running properly, type 
+```
+$ docker ps -a
+```
+into the command line and check wether all three are up and receive connections at specific ports.
+
+Next, open your Browser and type in **localhost:5050**. It needs a few seconds to set up (so keep refreshing if it doesn't work the first time) and then you should see the starting page for pgAdmin4. Type in a password of your choice (remember it or else you need to start the container again!) then click on **add new server**. You can name the serve anything you like, the more important part is the tab *connection*. You have to specify your host, which can be a service name as well. Thus you can type in the name of the postgres container which has creatively been named *postgres_container* (See the top of the *docker-compose*). 
 
 The information on the port, database name, user and password can directly be taken from the connection string in our *main.py* file. This makes sense because the python app needs to connect to the postgreSQL database with the same credentials as pgAdmin. Looking into the *docker-compose.yml* you can see where the environment variables were defined as:
 
 - **Port**: 5432
-- **Maintenance database**: test_netflix
-- **Username**: user_net
-- **Password**: password_net
+- **Maintenance database**: postgres
+- **Username**: username
+- **Password**: password
 
 If you save this connection and don't get an error message, you successfully connected the postgreSQL Server with pgAdmin and you can now view your database. Just open *Servers > YourServerName > test_netflix > Schemas > Tables* on the left side (Phew, that's a lot of subdirectories!). Then right-click on your table (which should be called *netflix_data*) and click refresh to load the newest data. By right-clicking on *netflix_data* again and selecting View/Edit you can take a look at your table and modify it using SQL queries.
 
 ## Tutorial: Setting up the Project yourself
 
-Will follow...
+#### Setting up the network
+
+At first, we need to create our database. We are going to use PostgreSQL for that, as well as pgAdmin4 in order to be able to view the data. Both of these steps can be done in a docker-compose file similar to the one in the project. However, everything created in a docker-compose is closed in itself. Therefore, we need to create a network first, that several services can connect to. We can create a bridge terminal called postgres by typing into our terminal
+```
+$ docker network create -d bridge postgres
+```
+Now, whenever we create a new service in a completely different docker-compose, we can simply connect to that network and all the services that are already inside it. All you need to do is load the network in the *docker-compose.yml* with
+```
+networks:
+  postgres:  # name we are using inside this docker-compose
+    external:
+      name: postgres  # name outside the docker-compose
+```
+
+
+#### Setting up the PostgreSQL server
+
+If you take a look into the *docker-compose.yml* file that comes with this repo you are going to find a section near the very top that builds the DB server. I'm going to go through each parameter so you can create a similar project on your own
+- **container_name** This is the name we are giving the container, so we can easily find or stop it in the terminal
+- **image** This is the image we are using to build this server. You could use a specified version of postgres, as well (depending on the project, this could be helpful, especially when working in a team). In case you don't have the image yet, it will be downloaded automatically.
+- **ports** Here we define the port of the container. The port is going to be used to communicate with the server. We are going to use the standard port for Postgres (5432), so a service can communicate with it (in order to retrieve or store data) by communicating with port 5432 in our network.
+- **environment** Unlike the variables before, the environment is specific to PostgreSQL. We define the user with password, as well as the name of the database. Later when we want to store data from our Python container in the server, these are important. The last environment variable PGDATA is for storage.
+- **volumes** This variable is crucial if your server is not running continuously. If you didn't define a volume, your database would be empty everytime you restart your computer. I created a directory *$HOME/docker/volumes/postgres* on my local machine that the container is allowed to access and store the data from inside the container in it. For every restart, it will look what it can find in this folder. Inside the container, the default storage place is */var/lib/postgresql/data*.
+- **networks** In here we are using the network we created before: *postgres*. We could connect our server to multiple networks using multiple dashes but in our small example, one network is enough.
+- **restart** This tells the container when to restart. Some options here are *on-failure*, *always* or *unless-stopped*. We are using the last one because that way it restarts once your computer is rebooted.
+
+#### Setting up pgAdmin4
+
+Several of th variables used for the PostgreSQL container are also being used in here. We give it a name, tell it what image, network and port to use and what volume it can store the data in. We also have environmental variables in here but they are not as important as above.
+
+We are going to use the standard port for pgAdmin4 which is 5050. Therefore - after running the docker-compose up command - we can open it by typing **localhost:5050** into our browser. Next, you want to click on "Add New Server" and type in the environment variables of the Postgres server and you're done!
+
+#### Creating the Python App
+
+So far we have accommodated for the PostgreSQL Server and the visualization tool. Next, we want to store data in the database to demonstrate that the connection works.
+
+To be continued ... :)

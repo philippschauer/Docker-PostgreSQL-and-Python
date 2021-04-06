@@ -7,7 +7,6 @@ services:
     image: postgres
     ports: 
       - 5432:5432
-    restart: always
     environment:
       POSTGRES_USER: username
       POSTGRES_PASSWORD: password
@@ -50,9 +49,9 @@ services:
 
 
 networks:
-  postgres:
+  postgres:  # name we are using inside this docker-compose
     external:
-      name: postgres
+      name: postgres  # name outside the docker-compose
 
 
 #  networks:
